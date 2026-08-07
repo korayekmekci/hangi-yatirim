@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/doviz_service.dart';
 import '../widgets/market_card.dart';
 import '../widgets/portfolio_summary.dart';
+import '../services/portfolio_service.dart';
 
 import 'dolar_screen.dart';
 import 'portfoy_screen.dart';
@@ -16,11 +17,15 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final DovizService dovizService = DovizService();
+  final PortfolioService portfolioService = PortfolioService();
 
   bool yukleniyor = true;
 
   double? usdTry;
   double? eurTry;
+  double? onsAltin;
+  double? gramAltin;
+  double toplamPortfoy = 0;
 
   @override
   void initState() {
@@ -31,10 +36,18 @@ class _HomeScreenState extends State<HomeScreen> {
  Future<void> verileriGetir() async {
   try {
     final data = await dovizService.kurlariGetir();
+    final portfoy = await portfolioService.oku();
 
     setState(() {
       usdTry = data["USD"];
       eurTry = data["EUR"];
+      onsAltin = data["ONS"];
+      gramAltin = data["GRAM"];
+       toplamPortfoy =
+      (portfoy["usd"]! * usdTry!) +
+      (portfoy["eur"]! * eurTry!) +
+      (portfoy["gramAltin"]! * gramAltin!) +
+      portfoy["tl"]!;
       yukleniyor = false;
     });
   } catch (e) {
@@ -115,8 +128,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
 
                 /// PORTFÖY
-                const PortfolioSummary(
-                  total: 0,
+                PortfolioSummary(
+                  total: toplamPortfoy,
                 ),
 
                 const SizedBox(height: 30),
@@ -138,7 +151,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Column(
                     children: [
+const Divider(height: 1),
 
+MarketCard(
+  icon: Icons.workspace_premium,
+  color: Colors.amber,
+  title: "Ons Altın",
+  value: onsAltin?.toStringAsFixed(2) ?? "--",
+),
+
+const Divider(height: 1),
+
+MarketCard(
+  icon: Icons.workspace_premium,
+  color: Colors.orange,
+  title: "Gram Altın",
+  value: "${gramAltin?.toStringAsFixed(2) ?? "--"} TL",
+),
                       MarketCard(
                         icon: Icons.attach_money,
                         color: Colors.green,
@@ -157,6 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
+                
 
                 const SizedBox(height: 30),
 
@@ -196,8 +226,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       "Portföy",
                       Icons.pie_chart,
                       Colors.deepPurple,
-                      () {
-                        Navigator.push(
+                      () async{
+                        await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => const PortfoyScreen(),
@@ -218,6 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icons.workspace_premium,
                       Colors.amber,
                       () {},
+                      
                     ),
                   ],
                 ),

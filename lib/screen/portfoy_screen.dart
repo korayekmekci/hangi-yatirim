@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../services/portfolio_service.dart';
 
 class PortfoyScreen extends StatefulWidget {
   const PortfoyScreen({super.key});
@@ -9,152 +9,95 @@ class PortfoyScreen extends StatefulWidget {
 }
 
 class _PortfoyScreenState extends State<PortfoyScreen> {
-  final TextEditingController dolarController = TextEditingController();
-  final TextEditingController kurController = TextEditingController();
+  final service = PortfolioService();
 
-  double toplam = 0;
-
-  final NumberFormat tlFormatter = NumberFormat.currency(
-    locale: 'tr_TR',
-    symbol: '₺',
-    decimalDigits: 2,
-  );
-
-  void hesapla() {
-    final double dolar = double.tryParse(
-          dolarController.text.replaceAll(',', '.'),
-        ) ??
-        0;
-
-    final double kur = double.tryParse(
-          kurController.text.replaceAll(',', '.'),
-        ) ??
-        0;
-
-    setState(() {
-      toplam = dolar * kur;
-    });
-  }
+  final usdController = TextEditingController();
+  final eurController = TextEditingController();
+  final gramController = TextEditingController();
+  final tlController = TextEditingController();
 
   @override
-  void dispose() {
-    dolarController.dispose();
-    kurController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    yukle();
+  }
+
+  Future<void> yukle() async {
+    final data = await service.oku();
+
+    usdController.text = data["usd"].toString();
+    eurController.text = data["eur"].toString();
+    gramController.text = data["gramAltin"].toString();
+    tlController.text = data["tl"].toString();
+
+    setState(() {});
+  }
+
+  Future<void> kaydet() async {
+    await service.kaydet(
+      usd: double.tryParse(usdController.text) ?? 0,
+      eur: double.tryParse(eurController.text) ?? 0,
+      gramAltin: double.tryParse(gramController.text) ?? 0,
+      tl: double.tryParse(tlController.text) ?? 0,
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Portföy kaydedildi."),
+      ),
+    );
+  }
+
+  Widget alan(String baslik, TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: TextField(
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: InputDecoration(
+          labelText: baslik,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        centerTitle: true,
-        title: const Text(
-          "Portföyüm",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text("Portföy"),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
+        child: ListView(
           children: [
-            const Icon(
-              Icons.pie_chart,
-              size: 80,
-              color: Colors.purple,
-            ),
+
+            alan("USD", usdController),
+
+            alan("EUR", eurController),
+
+            alan("Gram Altın", gramController),
+
+            alan("TL", tlController),
 
             const SizedBox(height: 20),
 
-            TextField(
-              controller: dolarController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: "Dolar miktarı",
-                prefixIcon: const Icon(Icons.attach_money),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
+            ElevatedButton(
+              onPressed: kaydet,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 55),
+              ),
+              child: const Text(
+                "KAYDET",
+                style: TextStyle(fontSize: 18),
               ),
             ),
 
-            const SizedBox(height: 20),
-
-            TextField(
-              controller: kurController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: "Dolar kuru",
-                prefixIcon: const Icon(Icons.currency_exchange),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: hesapla,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-                child: const Text(
-                  "PORTFÖYÜ HESAPLA",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 35),
-
-            Card(
-              elevation: 8,
-              color: Colors.purple,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 30,
-                  vertical: 25,
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      "Toplam Varlık",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 20,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    Text(
-                      tlFormatter.format(toplam),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 34,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),

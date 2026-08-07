@@ -13,27 +13,36 @@ class DovizService {
       "https://api.twelvedata.com/exchange_rate?symbol=EUR/TRY&apikey=$_apiKey",
     );
 
+    final goldUrl = Uri.parse(
+      "https://api.twelvedata.com/exchange_rate?symbol=XAU/USD&apikey=$_apiKey",
+    );
+
     final usdResponse = await http.get(usdUrl);
     final eurResponse = await http.get(eurUrl);
+    final goldResponse = await http.get(goldUrl);
 
     if (usdResponse.statusCode != 200 ||
-        eurResponse.statusCode != 200) {
+        eurResponse.statusCode != 200 ||
+        goldResponse.statusCode != 200) {
       throw Exception("API bağlantı hatası");
     }
 
     final usdJson = jsonDecode(usdResponse.body);
-    print("USD Response: ${usdResponse.body}");
-
     final eurJson = jsonDecode(eurResponse.body);
-    print("EUR Response: ${eurResponse.body}");
+    final goldJson = jsonDecode(goldResponse.body);
 
-    if (usdJson["rate"] == null || eurJson["rate"] == null) {
-      throw Exception("Kur bilgisi alınamadı.");
-    }
+    final usd = double.parse(usdJson["rate"].toString());
+    final eur = double.parse(eurJson["rate"].toString());
+    final ons = double.parse(goldJson["rate"].toString());
+
+    // 1 ons = 31.1035 gram
+    final gram = (ons * usd) / 31.1035;
 
     return {
-      "USD": double.parse(usdJson["rate"].toString()),
-      "EUR": double.parse(eurJson["rate"].toString()),
+      "USD": usd,
+      "EUR": eur,
+      "ONS": ons,
+      "GRAM": gram,
     };
   }
 }
